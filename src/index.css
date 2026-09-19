@@ -424,3 +424,54 @@ a { color: var(--accent); }
 }
 
 .btn-block { width: 100%; text-align: center; padding: 11px 14px; }
+
+/* ---------- debounce demo ---------- */
+
+.debounce-demo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 14px 0 0;
+}
+
+.debounce-cell {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 10px 12px;
+  transition: border-color 0.2s;
+}
+.debounce-cell.is-settling { border-color: var(--accent); }
+
+.debounce-cell dt {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  margin: 0 0 5px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.debounce-cell dd {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  min-height: 22px;
+  word-break: break-all;
+}
+.debounce-cell dd em { color: var(--text-dim); font-weight: 400; }
+
+.debounce-pending {
+  font-size: 10px;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--accent);
+}
+
+.debounce-note { display: block; margin-top: 5px; font-size: 11px; color: var(--text-dim); opacity: 0.8; }
+
+@media (max-width: 560px) {
+  .debounce-demo { grid-template-columns: 1fr; }
+}

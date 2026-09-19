@@ -1,21 +1,18 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useDebounce } from '../hooks/useDebounce'
 import { useFetch } from '../hooks/useFetch'
 import type { User } from '../types'
 
 const API = 'https://jsonplaceholder.typicode.com'
 
 export default function UsersPage() {
-  const [search, setSearch] = useState('') // what the user is typing
-  const [query, setQuery] = useState('') // debounced value that actually drives the fetch
+  const [search, setSearch] = useState('') // what the user is typing, updates every keystroke
   const [breakApi, setBreakApi] = useState(false) // points the fetch at a bad URL, to show the error state
 
-  // Debounce: the cleanup cancels the pending timer on every keystroke,
-  // so only the last pause of 300ms actually commits a query.
-  useEffect(() => {
-    const timeoutId = setTimeout(() => setQuery(search), 300)
-    return () => clearTimeout(timeoutId)
-  }, [search])
+  // The debounced value trails the raw one by 500ms of quiet.
+  const query = useDebounce(search, 500)
+  const settling = search !== query
 
   const url = breakApi
     ? `${API}/this-endpoint-does-not-exist`
@@ -50,6 +47,20 @@ export default function UsersPage() {
             <span>Simulate API failure</span>
           </label>
         </div>
+
+        {/* raw vs debounced, side by side — the whole point of useDebounce */}
+        <dl className="debounce-demo">
+          <div className="debounce-cell">
+            <dt>Raw value</dt>
+            <dd>{search === '' ? <em>empty</em> : search}</dd>
+            <span className="debounce-note">every keystroke</span>
+          </div>
+          <div className={settling ? 'debounce-cell is-settling' : 'debounce-cell'}>
+            <dt>Debounced {settling && <span className="debounce-pending">settling…</span>}</dt>
+            <dd>{query === '' ? <em>empty</em> : query}</dd>
+            <span className="debounce-note">after 500ms of quiet — this is what fetches</span>
+          </div>
+        </dl>
 
         {loading && <UserSkeleton />}
 
