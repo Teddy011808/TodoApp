@@ -19,7 +19,7 @@ export default function NavBar() {
     <header className="app-header">
       <div className="brand">
         <span className="brand-mark">◆</span>
-        <span>Module 4 App</span>
+        <span>React Workshop</span>
       </div>
 
       <nav className="nav">
