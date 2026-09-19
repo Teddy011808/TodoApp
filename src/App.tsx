@@ -4,6 +4,7 @@ import TodosPage from './pages/TodosPage'
 import UsersPage from './pages/UsersPage'
 import UserDetailPage from './pages/UserDetailPage'
 import ShopPage from './pages/ShopPage'
+import CheckoutPage from './pages/CheckoutPage'
 import NotFound from './pages/NotFound'
 
 export default function App() {
@@ -15,6 +16,7 @@ export default function App() {
         <Route path="/users" element={<UsersPage />} />
         <Route path="/users/:id" element={<UserDetailPage />} />
         <Route path="/shop" element={<ShopPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

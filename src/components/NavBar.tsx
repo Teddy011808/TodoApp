@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useCart } from '../context/CartContext'
+import { cartCount } from '../context/cartReducer'
 import LiveStatus from './LiveStatus'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -9,6 +11,9 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
 export default function NavBar() {
   // No auth prop is passed in from anywhere — NavBar reaches up through context.
   const { user, signIn, signOut } = useAuth()
+  // Cart count also comes from context, not from a prop threaded down the tree.
+  const { items } = useCart()
+  const count = cartCount(items)
   const [email, setEmail] = useState('')
   const [open, setOpen] = useState(false)
 
@@ -37,6 +42,9 @@ export default function NavBar() {
         </NavLink>
         <NavLink to="/shop" className={linkClass}>
           Shop
+        </NavLink>
+        <NavLink to="/checkout" className={linkClass}>
+          Cart{count > 0 && <span className="cart-badge">{count}</span>}
         </NavLink>
       </nav>
 
