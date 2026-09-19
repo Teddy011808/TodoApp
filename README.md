@@ -39,25 +39,25 @@ input — which is genuinely local and never shared.
 
 ## The effects, and what each cleanup prevents
 
-1. **Clock** — `src/components/LiveStatus.jsx`, `[]`
-   `clearInterval` stops the 1-second timer from firing after unmount, which prevents a
-   setState on an unmounted component and a timer that ticks forever in the background.
-
-2. **Window width** — `src/components/LiveStatus.jsx`, `[]`
+1. **Window width** — `src/components/LiveStatus.tsx`, `[]`
    `removeEventListener('resize', …)` drops the listener on unmount, which prevents the
    handler stacking up on every remount and leaking the component via the closure.
 
-3. **Search debounce** — `src/pages/UsersPage.jsx`, `[search]`
+2. **Search debounce** — `src/pages/UsersPage.tsx`, `[search]`
    `clearTimeout` cancels the pending timer on every keystroke, which prevents one fetch
    per character — only a 300ms pause actually commits a query.
 
-4. **Directory fetch** — `src/pages/UsersPage.jsx`, `[query, breakApi]`
+3. **Directory fetch** — inside `useFetch`, `[url]`
    Setting `cancelled = true` makes a late response a no-op, which prevents a slow earlier
    request from overwriting the results of a newer one (the race condition).
 
-5. **User detail fetch** — `src/pages/UserDetailPage.jsx`, `[id]`
+4. **User detail fetch** — inside `useFetch`, `[url]` derived from `:id`
    Setting `cancelled = true` makes the response for an old `:id` a no-op, which prevents
    the previous user's data from rendering on the page you just navigated to.
+
+5. **Sign-in redirect** — `src/pages/SignInPage.tsx`, `[user, destination, navigate]`
+   Nothing to clean up: it subscribes to no external system, it only redirects once the
+   user in context becomes non-null.
 
 ## Seeing all four fetch states
 
