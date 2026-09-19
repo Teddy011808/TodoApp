@@ -1,6 +1,8 @@
-# Module 3 — Todos + User Directory
+# Todos + User Directory + Shop
 
-A React app wiring together lifted state, effects with cleanup, a race-safe fetch, and client-side routing.
+A TypeScript React app built across two modules: lifted state, effects with cleanup and
+routing (module 3), then a typed async state machine, two contexts and a cart reducer
+(module 4).
 
 ## Run it
 
@@ -19,6 +21,8 @@ Then open the printed `http://localhost:xxxx` URL.
 | `/todos`       | todo list with filters + clear completed          |
 | `/users`       | user directory (loading / error / empty / data)   |
 | `/users/:id`   | user detail, driven by `useParams()`              |
+| `/shop`        | product catalogue, dispatches `ADD_ITEM`          |
+| `/checkout`    | cart summary read entirely from context           |
 | `*`            | 404 catch-all                                     |
 
 Navigation uses `<NavLink>` / `<Link>`, so moving between pages never reloads the document.
@@ -61,6 +65,69 @@ input — which is genuinely local and never shared.
 - **Data** — the default view of `/users`.
 - **Empty** — type a name that matches nobody, e.g. `zzzzz`.
 - **Error** — tick **Simulate API failure**, which points the fetch at a bad endpoint.
+
+## Architecture (module 4)
+
+### `useFetch<T>` — the async state machine
+
+`src/hooks/useFetch.ts` returns `{ data: T | null; loading: boolean; error: string | null }`.
+
+`data` is `T | null` rather than `T`, and that single choice is what forces every consumer
+to prove the request finished before touching the value:
+
+```ts
+const { data: users } = useFetch<User[]>(url)
+users.map(...)        // ✗ error TS18047: 'users' is possibly 'null'
+users && users.map(...)  // ✓ narrows to User[]
+```
+
+`src/hooks/useFetch.typetest.ts` pins that behaviour down at compile time — uncomment the
+line marked ❌ and `npm run typecheck` fails. It is instantiated twice in the app:
+`useFetch<User[]>` in `UsersPage`, `useFetch<User>` in `UserDetailPage`.
+
+**On hidden `any`:** the DOM lib types `response.json()` as `Promise<any>`, so that is the
+one door `any` can walk through. It is pinned to `Promise<T>` on a single visible line, and
+the `catch` binds `err` as `unknown` (not `any`), so the error has to be narrowed before use.
+
+### `AuthContext`
+
+`user` state plus `signIn(email)` / `signOut()`. The context defaults to `null` rather than a
+stub object, so `useAuth()` can throw when a consumer sits outside the provider instead of
+failing silently with a dead `signIn`. The value is memoised so consumers do not re-render
+on every parent render. `NavBar` receives no auth prop — it reads context and swaps between
+**Sign in** and **Hi, {user.email}**.
+
+### `CartContext` and the reducer
+
+`src/context/cartReducer.ts` holds every cart rule in one pure function: no fetch, no
+localStorage, no console, no mutation, and a `default` branch that returns `state` untouched
+behind a `const exhaustive: never = action` check that breaks the build if a new action
+member is ever left unhandled.
+
+No prop anywhere in the tree carries cart data. The three consumers — `NavBar`, `ShopPage`
+and `CheckoutPage` — each call `useCart()` directly.
+
+### How the discriminated union removes the impossible state
+
+> Because `CartAction` is a discriminated union, each member carries only the payload its own
+> branch needs — `REMOVE_ITEM` has an `id` and no `quantity` field at all — so "remove this
+> line" can never be expressed as "set its quantity to −1", and the only member that may
+> mention a quantity is `UPDATE_QUANTITY`, whose single branch in the reducer turns anything
+> at or below zero into a removal, leaving a negative quantity no path into state.
+
+Worth being precise about what this does and does not buy you: the union does not stop you
+*typing* `{ type: 'UPDATE_QUANTITY', id, quantity: -1 }` — `quantity` is a `number`. What it
+makes unrepresentable is a **stored** line with a negative quantity, because the reducer is
+the only writer of state and that one branch collapses `<= 0` into a `filter`.
+
+## Scripts
+
+```bash
+npm run dev        # vite dev server
+npm run typecheck  # tsc --noEmit
+npm run build      # typecheck + production build
+npm run lint       # oxlint
+```
 
 ## Screenshots
 
