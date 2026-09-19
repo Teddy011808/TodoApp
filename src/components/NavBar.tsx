@@ -1,5 +1,4 @@
-import { useState, type FormEvent } from 'react'
-import { NavLink } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { cartCount } from '../context/cartReducer'
@@ -10,21 +9,11 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
 
 export default function NavBar() {
   // No auth prop is passed in from anywhere — NavBar reaches up through context.
-  const { user, signIn, signOut } = useAuth()
+  const { user, signOut } = useAuth()
   // Cart count also comes from context, not from a prop threaded down the tree.
   const { items } = useCart()
   const count = cartCount(items)
-  const [email, setEmail] = useState('')
-  const [open, setOpen] = useState(false)
-
-  const handleSignIn = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const trimmed = email.trim()
-    if (!trimmed) return
-    signIn(trimmed)
-    setEmail('')
-    setOpen(false)
-  }
+  const location = useLocation()
 
   return (
     <header className="app-header">
@@ -52,28 +41,14 @@ export default function NavBar() {
         <LiveStatus />
 
         {user === null ? (
-          <div className="auth-box">
-            {open ? (
-              <form className="signin-form" onSubmit={handleSignIn}>
-                <input
-                  className="input input-sm"
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder="you@example.com"
-                  aria-label="Email address"
-                  autoFocus
-                />
-                <button className="btn btn-primary btn-sm" type="submit" disabled={!email.trim()}>
-                  Go
-                </button>
-              </form>
-            ) : (
-              <button className="btn btn-primary btn-sm" type="button" onClick={() => setOpen(true)}>
-                Sign in
-              </button>
-            )}
-          </div>
+          // Remember where we were, so sign-in can send us back here afterwards.
+          <Link
+            to="/signin"
+            state={{ from: location.pathname }}
+            className="btn btn-primary btn-sm"
+          >
+            Sign in
+          </Link>
         ) : (
           <div className="auth-box">
             <span className="greeting">Hi, {user.email}</span>

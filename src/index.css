@@ -307,8 +307,6 @@ a { color: var(--accent); }
 .btn-sm { padding: 6px 12px; font-size: 13px; }
 .input-sm { padding: 6px 10px; font-size: 13px; width: 180px; flex: none; }
 
-.signin-form { display: flex; align-items: center; gap: 6px; }
-
 .greeting {
   font-size: 13px;
   color: var(--text);
@@ -384,3 +382,34 @@ a { color: var(--accent); }
 @media (max-width: 560px) {
   .cart-line { grid-template-columns: 1fr auto; row-gap: 8px; }
 }
+
+/* ---------- sign-in page ---------- */
+
+.page-narrow { max-width: 420px; }
+
+.signin-card { padding: 28px 26px; }
+
+.signin-head { margin-bottom: 20px; }
+.signin-head h1 { margin: 0; font-size: 24px; letter-spacing: -0.3px; }
+
+.signin-page-form { display: flex; flex-direction: column; }
+
+.field-label {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+.signin-page-form .input { flex: none; width: 100%; margin-bottom: 16px; }
+
+.form-error {
+  margin: 0 0 14px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: rgba(255, 107, 107, 0.12);
+  border: 1px solid rgba(255, 107, 107, 0.35);
+  color: var(--danger);
+  font-size: 13px;
+}
+
+.btn-block { width: 100%; text-align: center; padding: 11px 14px; }
