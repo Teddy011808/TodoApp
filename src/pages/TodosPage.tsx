@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
-import AddTodo from '../components/AddTodo.jsx'
-import FilterBar from '../components/FilterBar.jsx'
-import TodoList from '../components/TodoList.jsx'
+import AddTodo from '../components/AddTodo'
+import FilterBar from '../components/FilterBar'
+import TodoList from '../components/TodoList'
+import type { Todo, TodoFilter } from '../types'
 
-const INITIAL_TODOS = [
+const INITIAL_TODOS: Todo[] = [
   { id: 1, text: 'Lift state into one owner', done: true },
   { id: 2, text: 'Give every effect a cleanup', done: false },
   { id: 3, text: 'Guard the fetch with a cancelled flag', done: false },
@@ -17,20 +18,20 @@ let nextId = INITIAL_TODOS.length + 1
  * props down and report back up through callbacks.
  */
 export default function TodosPage() {
-  const [todos, setTodos] = useState(INITIAL_TODOS)
-  const [filter, setFilter] = useState('all') // 'all' | 'active' | 'completed'
+  const [todos, setTodos] = useState<Todo[]>(INITIAL_TODOS)
+  const [filter, setFilter] = useState<TodoFilter>('all')
 
-  const addTodo = (text) => {
+  const addTodo = (text: string) => {
     setTodos((current) => [...current, { id: nextId++, text, done: false }])
   }
 
-  const toggleTodo = (id) => {
+  const toggleTodo = (id: number) => {
     setTodos((current) =>
       current.map((todo) => (todo.id === id ? { ...todo, done: !todo.done } : todo)),
     )
   }
 
-  const deleteTodo = (id) => {
+  const deleteTodo = (id: number) => {
     setTodos((current) => current.filter((todo) => todo.id !== id))
   }
 

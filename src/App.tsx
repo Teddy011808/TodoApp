@@ -1,9 +1,9 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import Layout from './components/Layout.jsx'
-import TodosPage from './pages/TodosPage.jsx'
-import UsersPage from './pages/UsersPage.jsx'
-import UserDetailPage from './pages/UserDetailPage.jsx'
-import NotFound from './pages/NotFound.jsx'
+import Layout from './components/Layout'
+import TodosPage from './pages/TodosPage'
+import UsersPage from './pages/UsersPage'
+import UserDetailPage from './pages/UserDetailPage'
+import NotFound from './pages/NotFound'
 
 export default function App() {
   return (

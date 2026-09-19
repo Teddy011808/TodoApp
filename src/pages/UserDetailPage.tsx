@@ -1,14 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import type { User } from '../types'
 
 const API = 'https://jsonplaceholder.typicode.com'
 
-export default function UserDetailPage() {
-  const { id } = useParams() // the URL param is the single source of truth for this page
+type Status = 'loading' | 'error' | 'ready'
 
-  const [status, setStatus] = useState('loading') // 'loading' | 'error' | 'ready'
-  const [user, setUser] = useState(null)
-  const [error, setError] = useState(null)
+export default function UserDetailPage() {
+  const { id } = useParams<{ id: string }>() // the URL param is the single source of truth
+
+  const [status, setStatus] = useState<Status>('loading')
+  const [user, setUser] = useState<User | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   // Re-runs whenever the :id segment changes; `cancelled` keeps an in-flight
   // response for an old id from landing after you've already navigated on.
@@ -22,16 +25,16 @@ export default function UserDetailPage() {
       .then((response) => {
         if (response.status === 404) throw new Error(`No user with id "${id}".`)
         if (!response.ok) throw new Error(`Request failed with status ${response.status}`)
-        return response.json()
+        return response.json() as Promise<User>
       })
       .then((data) => {
         if (cancelled) return
         setUser(data)
         setStatus('ready')
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         if (cancelled) return
-        setError(err.message)
+        setError(err instanceof Error ? err.message : 'Something went wrong')
         setStatus('error')
       })
 
@@ -93,7 +96,13 @@ export default function UserDetailPage() {
   )
 }
 
-function Field({ label, value, href }) {
+interface FieldProps {
+  label: string
+  value: string
+  href?: string
+}
+
+function Field({ label, value, href }: FieldProps): ReactNode {
   return (
     <div className="field">
       <dt>{label}</dt>

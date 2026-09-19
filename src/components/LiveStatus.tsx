@@ -6,8 +6,8 @@ import { useEffect, useState } from 'react'
  *  - window width -> removeEventListener drops the resize handler on unmount
  */
 export default function LiveStatus() {
-  const [now, setNow] = useState(() => new Date())
-  const [width, setWidth] = useState(() => window.innerWidth)
+  const [now, setNow] = useState<Date>(() => new Date())
+  const [width, setWidth] = useState<number>(() => window.innerWidth)
 
   // Clock: no reactive values are read inside, so the dependency array is empty.
   useEffect(() => {

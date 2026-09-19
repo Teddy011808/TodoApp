@@ -1,7 +1,8 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import LiveStatus from './LiveStatus.jsx'
+import LiveStatus from './LiveStatus'
 
-const linkClass = ({ isActive }) => (isActive ? 'nav-link is-active' : 'nav-link')
+const linkClass = ({ isActive }: { isActive: boolean }) =>
+  isActive ? 'nav-link is-active' : 'nav-link'
 
 export default function Layout() {
   return (

@@ -1,10 +1,14 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
+
+interface AddTodoProps {
+  onAdd: (text: string) => void
+}
 
 /** Owns only its own input text. The todo itself is handed up via onAdd. */
-export default function AddTodo({ onAdd }) {
+export default function AddTodo({ onAdd }: AddTodoProps) {
   const [text, setText] = useState('')
 
-  const handleSubmit = (event) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const trimmed = text.trim()
     if (!trimmed) return

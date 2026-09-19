@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import type { User } from '../types'
 
 const API = 'https://jsonplaceholder.typicode.com'
+
+type Status = 'loading' | 'error' | 'ready'
 
 export default function UsersPage() {
   const [search, setSearch] = useState('') // what the user is typing
   const [query, setQuery] = useState('') // debounced value that actually drives the fetch
   const [breakApi, setBreakApi] = useState(false) // points the fetch at a bad URL, to show the error state
 
-  const [status, setStatus] = useState('loading') // 'loading' | 'error' | 'ready'
-  const [users, setUsers] = useState([])
-  const [error, setError] = useState(null)
+  const [status, setStatus] = useState<Status>('loading')
+  const [users, setUsers] = useState<User[]>([])
+  const [error, setError] = useState<string | null>(null)
 
   // Debounce: the cleanup cancels the pending timer on every keystroke,
   // so only the last pause of 300ms actually commits a query.
@@ -34,16 +37,16 @@ export default function UsersPage() {
     fetch(url)
       .then((response) => {
         if (!response.ok) throw new Error(`Request failed with status ${response.status}`)
-        return response.json()
+        return response.json() as Promise<User[]>
       })
       .then((data) => {
         if (cancelled) return
         setUsers(data)
         setStatus('ready')
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         if (cancelled) return
-        setError(err.message)
+        setError(err instanceof Error ? err.message : 'Something went wrong')
         setStatus('error')
       })
 
@@ -84,9 +87,6 @@ export default function UsersPage() {
           <div className="state state-error" role="alert">
             <strong>Could not load the directory.</strong>
             <p>{error}</p>
-            <button type="button" className="btn" onClick={() => setQuery((q) => `${q}`)}>
-              Try again
-            </button>
           </div>
         )}
 
@@ -124,7 +124,7 @@ export default function UsersPage() {
   )
 }
 
-function UserSkeleton() {
+export function UserSkeleton() {
   return (
     <ul className="user-list" aria-busy="true" aria-label="Loading users">
       {Array.from({ length: 5 }, (_, index) => (
