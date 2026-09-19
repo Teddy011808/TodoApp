@@ -120,6 +120,72 @@ Worth being precise about what this does and does not buy you: the union does no
 makes unrepresentable is a **stored** line with a negative quantity, because the reducer is
 the only writer of state and that one branch collapses `<= 0` into a `filter`.
 
+## Reusable hooks (module 5)
+
+Everything in `src/hooks` starts with `use`, calls hooks only at the top level of
+its own body, and is never called conditionally.
+
+### `useLocalStorage(key, initial)`
+
+Reads once through a lazy initialiser, writes on every change, and listens for the
+`storage` event so two open tabs stay in step. Every `window.localStorage` access is
+wrapped in `try/catch`: Safari private mode throws on `setItem`, the quota can be
+full, and a value written by an older build may no longer parse. A storage failure
+must never take the UI down with it.
+
+It backs the cart, so the cart now survives a refresh. **Persistence lives in
+`CartProvider`, never in the reducer** — the reducer stays pure, exactly as the
+previous module required.
+
+### `useDebounce(value, delay)`
+
+Holds its timer handle in a `useRef` so the handle survives re-renders without
+causing one, and clears it in the effect cleanup. `UsersPage` shows the raw and
+debounced values side by side, so the 500ms lag is visible rather than asserted.
+
+### What broke when the debounce cleanup was removed
+
+I deleted the `clearTimeout` and ran the suite. Two tests failed:
+
+```
+FAIL  useDebounce > collapses rapid typing into a single update
+      expected '' but got 'Lean'
+FAIL  useDebounce > cancels the pending timer when the hook unmounts
+      expected "clearTimeout" to be called at least once
+```
+
+> Without the cleanup nothing cancels the previous timer, so every keystroke's
+> timer survives and fires on its own schedule — the hook stops debouncing and
+> degenerates into a 500ms-delayed echo of all eight keystrokes, firing a request
+> per character instead of one, and a timer left running past unmount then calls
+> `setState` on a component that no longer exists.
+
+## Tests
+
+```bash
+npm test          # vitest run
+npm run test:watch
+```
+
+27 tests across five files, each next to the code it covers:
+
+| File | Covers |
+| --- | --- |
+| `src/pages/SignInPage.test.tsx` | render by label, type + submit via userEvent, validation errors, absence via `queryByRole` |
+| `src/pages/UsersPage.test.tsx` | async data with `findByText`, loading/empty/error states, debounce behaviour |
+| `src/pages/CheckoutPage.test.tsx` | cart line disappearing at quantity 0, cart restored from storage |
+| `src/hooks/useDebounce.test.ts` | delay, collapsing rapid typing, unmount cleanup |
+| `src/hooks/useLocalStorage.test.ts` | defaults, write-through, remount, corrupt JSON, blocked storage |
+
+Queries mirror what a user perceives — labels, roles and visible text. There is not
+a single `getByTestId` in the suite. Where four Add-to-cart buttons shared one
+accessible name, the fix was to give each a distinct `aria-label` rather than reach
+for a test id, which also fixes them for screen reader users.
+
+**Note on the environment:** jsdom 29 under Vitest 4 exposes `window.localStorage`
+as a bare object with no `Storage` methods, so `src/test/setup.ts` installs a real
+in-memory `Storage` when it finds one missing.
+
 ## Scripts
 
 ```bash
@@ -127,6 +193,7 @@ npm run dev        # vite dev server
 npm run typecheck  # tsc --noEmit
 npm run build      # typecheck + production build
 npm run lint       # oxlint
+npm test           # vitest run
 ```
 
 ## Screenshots
