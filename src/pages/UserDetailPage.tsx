@@ -1,47 +1,17 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { useFetch } from '../hooks/useFetch'
 import type { User } from '../types'
 
 const API = 'https://jsonplaceholder.typicode.com'
 
-type Status = 'loading' | 'error' | 'ready'
-
 export default function UserDetailPage() {
   const { id } = useParams<{ id: string }>() // the URL param is the single source of truth
 
-  const [status, setStatus] = useState<Status>('loading')
-  const [user, setUser] = useState<User | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  // Re-runs whenever the :id segment changes; `cancelled` keeps an in-flight
-  // response for an old id from landing after you've already navigated on.
-  useEffect(() => {
-    let cancelled = false
-
-    setStatus('loading')
-    setError(null)
-
-    fetch(`${API}/users/${id}`)
-      .then((response) => {
-        if (response.status === 404) throw new Error(`No user with id "${id}".`)
-        if (!response.ok) throw new Error(`Request failed with status ${response.status}`)
-        return response.json() as Promise<User>
-      })
-      .then((data) => {
-        if (cancelled) return
-        setUser(data)
-        setStatus('ready')
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return
-        setError(err instanceof Error ? err.message : 'Something went wrong')
-        setStatus('error')
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [id])
+  // Same hook, instantiated with a single object this time: user is User | null.
+  // The URL is derived from the param, so changing :id re-runs the fetch and the
+  // hook's own cleanup cancels the response for the id you just navigated away from.
+  const { data: user, loading, error } = useFetch<User>(`${API}/users/${id}`)
 
   return (
     <section className="page">
@@ -49,7 +19,7 @@ export default function UserDetailPage() {
         ← Back to directory
       </Link>
 
-      {status === 'loading' && (
+      {loading && (
         <div className="card">
           <div className="skeleton skeleton-title" />
           <div className="skeleton skeleton-line" />
@@ -57,7 +27,7 @@ export default function UserDetailPage() {
         </div>
       )}
 
-      {status === 'error' && (
+      {!loading && error !== null && (
         <div className="card">
           <div className="state state-error" role="alert">
             <strong>Could not load user {id}.</strong>
@@ -66,7 +36,7 @@ export default function UserDetailPage() {
         </div>
       )}
 
-      {status === 'ready' && user && (
+      {!loading && error === null && user && (
         <>
           <header className="page-head detail-head">
             <span className="avatar avatar-lg" aria-hidden="true">

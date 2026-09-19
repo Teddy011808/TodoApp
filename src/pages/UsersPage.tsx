@@ -1,19 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useFetch } from '../hooks/useFetch'
 import type { User } from '../types'
 
 const API = 'https://jsonplaceholder.typicode.com'
-
-type Status = 'loading' | 'error' | 'ready'
 
 export default function UsersPage() {
   const [search, setSearch] = useState('') // what the user is typing
   const [query, setQuery] = useState('') // debounced value that actually drives the fetch
   const [breakApi, setBreakApi] = useState(false) // points the fetch at a bad URL, to show the error state
-
-  const [status, setStatus] = useState<Status>('loading')
-  const [users, setUsers] = useState<User[]>([])
-  const [error, setError] = useState<string | null>(null)
 
   // Debounce: the cleanup cancels the pending timer on every keystroke,
   // so only the last pause of 300ms actually commits a query.
@@ -22,38 +17,13 @@ export default function UsersPage() {
     return () => clearTimeout(timeoutId)
   }, [search])
 
-  // The fetch. `cancelled` makes a slow, out-of-order response a no-op,
-  // so an older request can never overwrite a newer one's data.
-  useEffect(() => {
-    let cancelled = false
+  const url = breakApi
+    ? `${API}/this-endpoint-does-not-exist`
+    : `${API}/users?name_like=${encodeURIComponent(query)}`
 
-    setStatus('loading')
-    setError(null)
-
-    const url = breakApi
-      ? `${API}/this-endpoint-does-not-exist`
-      : `${API}/users?name_like=${encodeURIComponent(query)}`
-
-    fetch(url)
-      .then((response) => {
-        if (!response.ok) throw new Error(`Request failed with status ${response.status}`)
-        return response.json() as Promise<User[]>
-      })
-      .then((data) => {
-        if (cancelled) return
-        setUsers(data)
-        setStatus('ready')
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return
-        setError(err instanceof Error ? err.message : 'Something went wrong')
-        setStatus('error')
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [query, breakApi])
+  // The generic instantiated with an array type. `users` is User[] | null,
+  // and the cancelled-flag race guard now lives inside the hook.
+  const { data: users, loading, error } = useFetch<User[]>(url)
 
   return (
     <section className="page">
@@ -81,23 +51,24 @@ export default function UsersPage() {
           </label>
         </div>
 
-        {status === 'loading' && <UserSkeleton />}
+        {loading && <UserSkeleton />}
 
-        {status === 'error' && (
+        {!loading && error !== null && (
           <div className="state state-error" role="alert">
             <strong>Could not load the directory.</strong>
             <p>{error}</p>
           </div>
         )}
 
-        {status === 'ready' && users.length === 0 && (
+        {/* `users &&` is not decoration — without it TypeScript refuses .length and .map */}
+        {!loading && error === null && users && users.length === 0 && (
           <div className="state state-empty">
             <strong>No users match “{query}”.</strong>
             <p>Try a different name, or clear the search box.</p>
           </div>
         )}
 
-        {status === 'ready' && users.length > 0 && (
+        {!loading && error === null && users && users.length > 0 && (
           <ul className="user-list">
             {users.map((user) => (
               <li key={user.id} className="user-row">
