@@ -35,6 +35,9 @@ export default function NavBar() {
         <NavLink to="/users" className={linkClass}>
           Directory
         </NavLink>
+        <NavLink to="/shop" className={linkClass}>
+          Shop
+        </NavLink>
       </nav>
 
       <div className="header-right">

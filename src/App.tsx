@@ -3,6 +3,7 @@ import Layout from './components/Layout'
 import TodosPage from './pages/TodosPage'
 import UsersPage from './pages/UsersPage'
 import UserDetailPage from './pages/UserDetailPage'
+import ShopPage from './pages/ShopPage'
 import NotFound from './pages/NotFound'
 
 export default function App() {
@@ -13,6 +14,7 @@ export default function App() {
         <Route path="/todos" element={<TodosPage />} />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/users/:id" element={<UserDetailPage />} />
+        <Route path="/shop" element={<ShopPage />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
