@@ -64,4 +64,4 @@ input — which is genuinely local and never shared.
 
 ## Screenshots
 
-See [`screenshots/`](screenshots/).
+Captured locally in `screenshots/` (git-ignored) and submitted separately.
