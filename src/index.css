@@ -297,3 +297,27 @@ a { color: var(--accent); }
   .app-main { padding: 22px 16px 48px; }
   .field { grid-template-columns: 1fr; gap: 2px; }
 }
+
+/* ---------- auth / navbar ---------- */
+
+.header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+.auth-box { display: flex; align-items: center; gap: 8px; }
+
+.btn-sm { padding: 6px 12px; font-size: 13px; }
+.input-sm { padding: 6px 10px; font-size: 13px; width: 180px; flex: none; }
+
+.signin-form { display: flex; align-items: center; gap: 6px; }
+
+.greeting {
+  font-size: 13px;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 12px;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
