@@ -31,6 +31,7 @@ export default function ShopPage() {
                 <button
                   type="button"
                   className="btn btn-primary btn-sm"
+                  aria-label={`Add ${product.title} to cart`}
                   onClick={() => dispatch({ type: 'ADD_ITEM', product })}
                 >
                   Add to cart

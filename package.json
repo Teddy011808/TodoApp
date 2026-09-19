@@ -8,7 +8,9 @@
     "build": "tsc --noEmit && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "react": "^19.2.8",

@@ -52,12 +52,12 @@ export default function UsersPage() {
         <dl className="debounce-demo">
           <div className="debounce-cell">
             <dt>Raw value</dt>
-            <dd>{search === '' ? <em>empty</em> : search}</dd>
+            <dd aria-label="Raw search value">{search === '' ? <em>empty</em> : search}</dd>
             <span className="debounce-note">every keystroke</span>
           </div>
           <div className={settling ? 'debounce-cell is-settling' : 'debounce-cell'}>
             <dt>Debounced {settling && <span className="debounce-pending">settling…</span>}</dt>
-            <dd>{query === '' ? <em>empty</em> : query}</dd>
+            <dd aria-label="Debounced search value">{query === '' ? <em>empty</em> : query}</dd>
             <span className="debounce-note">after 500ms of quiet — this is what fetches</span>
           </div>
         </dl>
