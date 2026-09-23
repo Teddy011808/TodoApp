@@ -1,6 +1,6 @@
-# Todos + User Directory + Shop
+# Habits + Todos + User Directory + Shop
 
-A TypeScript React app built across two modules: lifted state, effects with cleanup and
+A TypeScript React app built across several modules: lifted state, effects with cleanup and
 routing (module 3), then a typed async state machine, two contexts and a cart reducer
 (module 4).
 
@@ -8,8 +8,12 @@ routing (module 3), then a typed async state machine, two contexts and a cart re
 
 ```bash
 npm install
+cp .env.example .env   # then fill in VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
 npm run dev
 ```
+
+`.env` is git-ignored; only `.env.example` (placeholders) is committed. The database
+schema lives in `supabase/schema.sql` — see [Habit tracker](#habit-tracker-supabase).
 
 Then open the printed `http://localhost:xxxx` URL.
 
@@ -17,7 +21,10 @@ Then open the printed `http://localhost:xxxx` URL.
 
 | Route          | Page                                              |
 | -------------- | ------------------------------------------------- |
-| `/`            | redirects to `/todos`                             |
+| `/`            | redirects to `/habits`                            |
+| `/habits`      | habit tracker — signed-in only (`ProtectedRoute`) |
+| `/login`       | Supabase email + password sign-in                 |
+| `/signup`      | create an account                                 |
 | `/todos`       | todo list with filters + clear completed          |
 | `/users`       | user directory (loading / error / empty / data)   |
 | `/users/:id`   | user detail, driven by `useParams()`              |
@@ -160,6 +167,42 @@ FAIL  useDebounce > cancels the pending timer when the hook unmounts
 > per character instead of one, and a timer left running past unmount then calls
 > `setState` on a component that no longer exists.
 
+## Habit tracker (Supabase)
+
+### Setup
+
+1. Create a Supabase project; copy **Project URL** and the **anon public** key from
+   *Project Settings → API* into `.env`. Never put the `service_role` key in a `VITE_`
+   variable — Vite bundles every `VITE_` variable into the browser.
+2. Run `supabase/schema.sql` in the SQL editor (tables, then RLS, then the seed block
+   after signing up once and putting your email in it).
+3. For quick local testing, *Authentication → Providers → Email → Confirm email* can be
+   turned off so sign-up signs you straight in.
+
+### Schema
+
+- `habits (id, user_id → auth.users, name, created_at)`
+- `daily_logs (id, habit_id → habits ON DELETE CASCADE, user_id, log_date)`, unique per
+  habit per day. Deleting a habit deletes its logs in the same statement.
+
+### How the pieces fit
+
+- `src/lib/supabase.ts` — the single client, built from `import.meta.env`.
+- `AuthContext` — holds the Supabase session, kept current by `onAuthStateChange`
+  (which also fires `INITIAL_SESSION` with the session restored from storage, so a
+  refresh keeps you signed in). `loading` stays true until that first event.
+- `ProtectedRoute` — waits while `loading`, then renders the page or redirects to
+  `/login` with `state.from` so sign-in returns you where you were. This is UX only;
+  the database enforces access.
+- `useHabits(userId)` — list / add / rename / toggle-today / delete, each with loading
+  and error state. Toggling today inserts or deletes a `daily_logs` row.
+
+### Row Level Security
+
+RLS is enabled on both tables and every policy is `to authenticated` with
+`auth.uid() = user_id` — `USING` for SELECT/DELETE, `WITH CHECK` for INSERT, both for
+UPDATE. A second account therefore gets `[]` back — an empty list, not an error.
+
 ## Tests
 
 ```bash
@@ -167,11 +210,15 @@ npm test          # vitest run
 npm run test:watch
 ```
 
-27 tests across five files, each next to the code it covers:
+33 tests across seven files, each next to the code it covers. None of them talk to a real
+Supabase project: `src/test/setup.ts` swaps `src/lib/supabase` for the in-memory fake in
+`src/test/fakeSupabase.ts`.
 
 | File | Covers |
 | --- | --- |
-| `src/pages/SignInPage.test.tsx` | render by label, type + submit via userEvent, validation errors, absence via `queryByRole` |
+| `src/pages/LoginPage.test.tsx` | render by label, validation errors, Supabase's wrong-password error, sign-in redirect |
+| `src/components/ProtectedRoute.test.tsx` | waits for the session, redirects signed-out visitors, keeps a restored session |
+| `src/pages/HabitsPage.test.tsx` | list + done-today, empty list (not an error), query error, add success/failure |
 | `src/pages/UsersPage.test.tsx` | async data with `findByText`, loading/empty/error states, debounce behaviour |
 | `src/pages/CheckoutPage.test.tsx` | cart line disappearing at quantity 0, cart restored from storage |
 | `src/hooks/useDebounce.test.ts` | delay, collapsing rapid typing, unmount cleanup |

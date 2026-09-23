@@ -23,6 +23,9 @@ export default function NavBar() {
       </div>
 
       <nav className="nav">
+        <NavLink to="/habits" className={linkClass}>
+          Habits
+        </NavLink>
         <NavLink to="/todos" className={linkClass}>
           Todos
         </NavLink>
@@ -43,7 +46,7 @@ export default function NavBar() {
         {user === null ? (
           // Remember where we were, so sign-in can send us back here afterwards.
           <Link
-            to="/signin"
+            to="/login"
             state={{ from: location.pathname }}
             className="btn btn-primary btn-sm"
           >
@@ -52,7 +55,7 @@ export default function NavBar() {
         ) : (
           <div className="auth-box">
             <span className="greeting">Hi, {user.email}</span>
-            <button className="btn btn-sm" type="button" onClick={signOut}>
+            <button className="btn btn-sm" type="button" onClick={() => void signOut()}>
               Sign out
             </button>
           </div>

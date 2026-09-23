@@ -25,3 +25,17 @@ export interface Product {
   price: number
   blurb: string
 }
+
+/** One check-in: the habit was done on log_date (YYYY-MM-DD). */
+export interface DailyLog {
+  id: number
+  log_date: string
+}
+
+/** A row of `habits`, with today's log embedded (empty array = not done today). */
+export interface Habit {
+  id: number
+  name: string
+  created_at: string
+  daily_logs: DailyLog[]
+}

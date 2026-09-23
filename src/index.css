@@ -475,3 +475,22 @@ a { color: var(--accent); }
 @media (max-width: 560px) {
   .debounce-demo { grid-template-columns: 1fr; }
 }
+
+/* ---------- habits (Supabase) ---------- */
+
+.auth-switch { margin: 18px 0 0; text-align: center; font-size: 13px; color: var(--text-dim); }
+
+.form-notice {
+  margin: 0 0 14px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: rgba(74, 222, 128, 0.1);
+  border: 1px solid rgba(74, 222, 128, 0.35);
+  color: var(--ok);
+  font-size: 13px;
+}
+
+.habit-list { margin-top: 16px; }
+.habit-edit { flex: 1; }
+.habit-error { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 14px 0 0; }
+.todo-item[aria-busy='true'] { opacity: 0.6; }

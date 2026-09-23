@@ -1,35 +1,34 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useState, type FormEvent, type ReactNode } from 'react'
 
-/** Where to land after a successful sign-in, if we were not sent here from somewhere. */
-const DEFAULT_DESTINATION = '/shop'
-
-interface FromState {
-  from?: string
+interface AuthFormProps {
+  title: string
+  subtitle: ReactNode
+  submitLabel: string
+  pendingLabel: string
+  passwordAutoComplete: 'current-password' | 'new-password'
+  /** Resolves to an error message, or null on success. */
+  onSubmit: (email: string, password: string) => Promise<string | null>
+  footer: ReactNode
+  notice?: string | null
 }
 
-export default function SignInPage() {
-  const { user, signIn } = useAuth()
-  const navigate = useNavigate()
-  const location = useLocation()
-
+/** The email + password form shared by sign-in and sign-up. */
+export default function AuthForm({
+  title,
+  subtitle,
+  submitLabel,
+  pendingLabel,
+  passwordAutoComplete,
+  onSubmit,
+  footer,
+  notice,
+}: AuthFormProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
 
-  // Wherever the user was headed before being sent here.
-  const state = location.state as FromState | null
-  const destination = state?.from ?? DEFAULT_DESTINATION
-
-  // Already signed in? There is nothing to do on this page.
-  useEffect(() => {
-    if (user !== null) {
-      navigate(destination, { replace: true })
-    }
-  }, [user, destination, navigate])
-
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     const trimmedEmail = email.trim()
@@ -45,21 +44,18 @@ export default function SignInPage() {
     }
 
     setError(null)
-
-    // There is no backend here, and the module specifies signIn(email), so the
-    // password is checked for shape and then deliberately dropped — it is never
-    // stored in context, in state, or anywhere else.
-    signIn(trimmedEmail)
-
-    navigate(destination, { replace: true })
+    setSubmitting(true)
+    const message = await onSubmit(trimmedEmail, password)
+    setSubmitting(false)
+    if (message !== null) setError(message)
   }
 
   return (
     <section className="page page-narrow">
       <div className="card signin-card">
         <header className="signin-head">
-          <h1>Sign in</h1>
-          <p className="page-sub">Use any email and a password of six characters or more.</p>
+          <h1>{title}</h1>
+          <p className="page-sub">{subtitle}</p>
         </header>
 
         <form className="signin-page-form" onSubmit={handleSubmit} noValidate>
@@ -84,7 +80,7 @@ export default function SignInPage() {
             id="password"
             className="input"
             type="password"
-            autoComplete="current-password"
+            autoComplete={passwordAutoComplete}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             placeholder="••••••••"
@@ -96,10 +92,18 @@ export default function SignInPage() {
             </p>
           )}
 
-          <button className="btn btn-primary btn-block" type="submit">
-            Sign in
+          {notice && (
+            <p className="form-notice" role="status">
+              {notice}
+            </p>
+          )}
+
+          <button className="btn btn-primary btn-block" type="submit" disabled={submitting}>
+            {submitting ? pendingLabel : submitLabel}
           </button>
         </form>
+
+        <p className="auth-switch">{footer}</p>
       </div>
     </section>
   )
