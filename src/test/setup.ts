@@ -1,6 +1,10 @@
 import '@testing-library/jest-dom/vitest'
-import { afterEach, beforeEach } from 'vitest'
+import { afterEach, beforeEach, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
+import { resetFakeSupabase } from './fakeSupabase'
+
+// No test talks to a real Supabase project — see fakeSupabase.ts.
+vi.mock('../lib/supabase', () => import('./fakeSupabase'))
 
 /**
  * jsdom 29 under Vitest 4 exposes `window.localStorage` as a bare object with
@@ -51,4 +55,5 @@ afterEach(() => {
 // between tests and make them order-dependent.
 beforeEach(() => {
   window.localStorage.clear()
+  resetFakeSupabase()
 })

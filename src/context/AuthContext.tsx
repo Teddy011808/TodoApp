@@ -1,13 +1,25 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import type { Session, User } from '@supabase/supabase-js'
+import { supabase } from '../lib/supabase'
 
-export interface AuthUser {
-  email: string
+export interface SignUpResult {
+  error: string | null
+  /** True when the project requires email confirmation, so there is no session yet. */
+  needsConfirmation: boolean
 }
 
 export interface AuthContextValue {
-  user: AuthUser | null
-  signIn: (email: string) => void
-  signOut: () => void
+  session: Session | null
+  user: User | null
+  /**
+   * True until Supabase has restored (or ruled out) a persisted session.
+   * Without it, a refresh on a protected page would bounce to /login before
+   * the stored session had a chance to load.
+   */
+  loading: boolean
+  signIn: (email: string, password: string) => Promise<string | null>
+  signUp: (email: string, password: string) => Promise<SignUpResult>
+  signOut: () => Promise<void>
 }
 
 /**
@@ -20,21 +32,40 @@ export interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  const signIn = useCallback((email: string) => {
-    setUser({ email })
+  useEffect(() => {
+    // Fires INITIAL_SESSION straight away with whatever was persisted, then
+    // again on every sign-in, sign-out and token refresh — including ones
+    // made in another tab.
+    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession)
+      setLoading(false)
+    })
+    return () => data.subscription.unsubscribe()
   }, [])
 
-  const signOut = useCallback(() => {
-    setUser(null)
+  const signIn = useCallback(async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    return error ? error.message : null
+  }, [])
+
+  const signUp = useCallback(async (email: string, password: string): Promise<SignUpResult> => {
+    const { data, error } = await supabase.auth.signUp({ email, password })
+    if (error) return { error: error.message, needsConfirmation: false }
+    return { error: null, needsConfirmation: data.session === null }
+  }, [])
+
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut()
   }, [])
 
   // Memoised so the context value is not a brand-new object on every render,
   // which would re-render every consumer even when nothing actually changed.
   const value = useMemo<AuthContextValue>(
-    () => ({ user, signIn, signOut }),
-    [user, signIn, signOut],
+    () => ({ session, user: session?.user ?? null, loading, signIn, signUp, signOut }),
+    [session, loading, signIn, signUp, signOut],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
