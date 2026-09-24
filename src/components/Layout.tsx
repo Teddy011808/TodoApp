@@ -2,6 +2,8 @@ import { Outlet } from 'react-router-dom'
 import CrashTest, { useClearCrash } from './CrashTest'
 import ErrorBoundary from './ErrorBoundary'
 import NavBar from './NavBar'
+import OfflineBanner from './OfflineBanner'
+import UpdateToast from './UpdateToast'
 
 export default function Layout() {
   const clearCrash = useClearCrash()
@@ -28,12 +30,16 @@ export default function Layout() {
         <NavBar />
       </ErrorBoundary>
 
+      <OfflineBanner />
+
       <main className="app-main">
         {/* Last resort for any page without finer-grained boundaries. */}
         <ErrorBoundary label="This page" onReset={clearCrash}>
           <Outlet />
         </ErrorBoundary>
       </main>
+
+      <UpdateToast />
     </div>
   )
 }

@@ -4,6 +4,7 @@ import CrashTest, { useClearCrash } from '../components/CrashTest'
 import ErrorBoundary from '../components/ErrorBoundary'
 import HabitItem from '../components/HabitItem'
 import HabitStats from '../components/HabitStats'
+import ShareButton from '../components/ShareButton'
 import { useAuth } from '../context/AuthContext'
 import { useHabits } from '../hooks/useHabits'
 
@@ -15,9 +16,16 @@ export default function HabitsPage() {
 
   return (
     <section className="page">
-      <header className="page-head">
-        <h1>Habits</h1>
-        <p className="page-sub">Small things, every day.</p>
+      <header className="page-head page-head-row">
+        <div>
+          <h1>Habits</h1>
+          <p className="page-sub">Small things, every day.</p>
+        </div>
+        <ShareButton
+          title="React Workshop Habits"
+          text="I’m building small daily habits with this tracker — it works offline too."
+          url={window.location.origin}
+        />
       </header>
 
       <div className="card section-card">
@@ -44,6 +52,7 @@ function HabitTracker({ userId, onResetCrash }: { userId: string; onResetCrash: 
     renameHabit,
     toggleToday,
     deleteHabit,
+    queuedCount,
     dismissError,
   } = useHabits(userId)
   const [name, setName] = useState('')
@@ -78,6 +87,11 @@ function HabitTracker({ userId, onResetCrash }: { userId: string; onResetCrash: 
 
       <div className="card section-card">
         <h2 className="section-title">Your habits</h2>
+        {queuedCount > 0 && (
+          <p className="queued-note" role="status">
+            {queuedCount === 1 ? '1 habit is' : `${queuedCount} habits are`} waiting to sync.
+          </p>
+        )}
         <form className="add-todo" onSubmit={handleAdd}>
           <input
             className="input"

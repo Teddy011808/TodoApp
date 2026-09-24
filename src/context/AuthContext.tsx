@@ -59,6 +59,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut()
+    // The service worker keeps the last API responses for offline use. On a
+    // shared device the next person must not see them, so drop them here.
+    if ('caches' in window) {
+      await Promise.all(['supabase-api', 'avatars'].map((name) => caches.delete(name)))
+    }
   }, [])
 
   // Memoised so the context value is not a brand-new object on every render,

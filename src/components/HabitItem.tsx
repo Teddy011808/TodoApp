@@ -58,6 +58,9 @@ export default function HabitItem({ habit, busy, onToggle, onRename, onDelete }:
     )
   }
 
+  // A queued habit has no server row yet, so there is nothing to tick or rename.
+  const queued = habit.queued === true
+
   return (
     <li className={doneToday ? 'todo-item is-done' : 'todo-item'} aria-busy={busy}>
       <label className="todo-label">
@@ -65,12 +68,17 @@ export default function HabitItem({ habit, busy, onToggle, onRename, onDelete }:
           type="checkbox"
           checked={doneToday}
           onChange={() => onToggle(habit)}
-          disabled={busy}
+          disabled={busy || queued}
           aria-label={`${habit.name} done today`}
         />
         <span className="todo-text">{habit.name}</span>
+        {queued && (
+          <span className="queued-badge" title="Saved on this device — it will sync when you reconnect">
+            Queued
+          </span>
+        )}
       </label>
-      <button type="button" className="btn btn-sm btn-ghost" onClick={startEditing} disabled={busy}>
+      <button type="button" className="btn btn-sm btn-ghost" onClick={startEditing} disabled={busy || queued}>
         Edit
       </button>
       <button

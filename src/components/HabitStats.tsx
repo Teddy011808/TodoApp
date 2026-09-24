@@ -6,7 +6,7 @@ export default function HabitStats({ habits }: { habits: Habit[] }) {
   const percent = habits.length === 0 ? 0 : Math.round((done / habits.length) * 100)
 
   return (
-    <dl className="stats" role="group" aria-label="Today's stats">
+    <dl className="stats grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" role="group" aria-label="Today's stats">
       <div className="stat">
         <dt>Habits</dt>
         <dd>{habits.length}</dd>
