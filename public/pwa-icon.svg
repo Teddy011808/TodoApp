@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Full-bleed background so the maskable icon has no transparent corners. -->
+  <rect width="512" height="512" fill="#0f1115"/>
+  <!-- The app's ◆ brand mark, kept inside the maskable safe zone (centre 80%). -->
+  <path d="M256 104 L408 256 L256 408 L104 256 Z" fill="#6aa6ff"/>
+  <!-- A check: it's a habit tracker. -->
+  <path d="M196 258 L240 302 L320 214" fill="none" stroke="#0b1220" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

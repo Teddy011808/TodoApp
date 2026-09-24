@@ -84,11 +84,10 @@ a { color: var(--accent); }
   font-variant-numeric: tabular-nums;
   font-size: 11px;
   color: var(--text-dim);
-  opacity: 0.7;
   padding-left: 7px;
   border-left: 1px solid var(--border);
 }
-.live-width::after { content: 'px'; opacity: 0.6; margin-left: 1px; }
+.live-width::after { content: 'px'; margin-left: 1px; }
 
 .app-main { flex: 1; padding: 32px 24px 64px; }
 
@@ -136,6 +135,7 @@ a { color: var(--accent); }
   transition: opacity 0.15s, background 0.15s;
   text-decoration: none;
   display: inline-block;
+  white-space: nowrap;
 }
 .btn:hover:not(:disabled) { background: #262b36; }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -303,8 +303,16 @@ a { color: var(--accent); }
 .not-found-actions { display: flex; gap: 10px; justify-content: center; margin-top: 22px; flex-wrap: wrap; }
 
 @media (max-width: 560px) {
-  .app-header { gap: 12px; }
+  .app-header { gap: 10px 12px; padding: 12px 16px; }
   .live-status { margin-left: 0; order: 3; }
+  /* The five links need ~400px in one line; on a phone they get their own
+     full-width row and wrap, so no link is ever pushed off-screen. */
+  .nav { order: 4; flex: 1 1 100%; flex-wrap: wrap; gap: 4px; }
+  .nav-link { padding: 6px 11px; font-size: 14px; }
+  /* Let the email pill shrink (it ends in "…") instead of widening the page. */
+  .header-right, .auth-box { min-width: 0; max-width: 100%; }
+  .greeting { max-width: 160px; min-width: 0; flex: 0 1 auto; }
+  .net-banner { padding: 9px 16px; }
   .app-main { padding: 22px 16px 48px; }
   .field { grid-template-columns: 1fr; gap: 2px; }
 }
@@ -333,7 +341,7 @@ a { color: var(--accent); }
 
 /* ---------- shop ---------- */
 
-.product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.product-grid { gap: 14px; }
 
 .product { display: flex; flex-direction: column; gap: 6px; }
 .product-title { margin: 0; font-size: 16px; }
@@ -501,7 +509,7 @@ a { color: var(--accent); }
 .section-title { margin: 0 0 14px; font-size: 13px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; }
 .section-card .habit-list:first-child { margin-top: 0; }
 
-.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0; }
+.stats { margin: 0; gap: 10px; }
 .stat { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
 .stat dt { font-size: 12px; color: var(--text-dim); }
 .stat dd { margin: 2px 0 0; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -539,5 +547,48 @@ a { color: var(--accent); }
 
 @media (max-width: 520px) {
   .avatar-uploader { flex-direction: column; }
-  .stats { grid-template-columns: 1fr; }
 }
+
+/* ---------- responsive grid (mobile-first) ---------- */
+/* One column on phones, two from 640px, three from 1024px — the
+   grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 pattern, in plain CSS. */
+
+.grid { display: grid; gap: 12px; }
+.grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+@media (min-width: 640px) { .sm\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+/* Three stats in two columns would strand the last card: let it span the row. */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .stats > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+
+/* ---------- PWA: offline banner, update toast, queued habits, share ---------- */
+
+.net-banner {
+  padding: 9px 24px; font-size: 13px; text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+.net-banner.is-offline { background: #3a2a12; color: #ffd28a; }
+.net-banner.is-online { background: rgba(74, 222, 128, 0.12); color: var(--ok); }
+
+.toast {
+  position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+  z-index: 50; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center;
+  width: max-content; max-width: calc(100vw - 32px);
+  padding: 10px 12px 10px 16px; border-radius: 12px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); font-size: 14px;
+}
+
+.queued-badge {
+  flex: none; font-size: 11px; font-weight: 600; letter-spacing: 0.02em;
+  padding: 2px 8px; border-radius: 999px;
+  color: #ffd28a; background: #3a2a12; border: 1px solid #5c4318;
+}
+.queued-note { margin: -6px 0 12px; font-size: 13px; color: #ffd28a; }
+
+.page-head-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.share { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.share .btn { display: inline-flex; align-items: center; gap: 6px; }
+.share-status { font-size: 13px; color: var(--ok); }
+.share-status:empty { display: none; }

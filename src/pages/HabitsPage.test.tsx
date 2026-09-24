@@ -1,9 +1,10 @@
-import { describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { AuthProvider } from '../context/AuthContext'
 import { queueQueryResult, signInAs } from '../test/fakeSupabase'
+import { goOnline, installNetworkControl, setOnlineSilently } from '../test/network'
 import HabitsPage from './HabitsPage'
 
 function renderHabits(path = '/habits') {
@@ -18,6 +19,8 @@ function renderHabits(path = '/habits') {
 }
 
 describe('HabitsPage', () => {
+  beforeEach(() => installNetworkControl())
+
   it('lists the habits and which are done today', async () => {
     queueQueryResult({
       data: [
@@ -101,5 +104,44 @@ describe('HabitsPage', () => {
     expect(await screen.findByRole('group', { name: "Today's stats" })).toBeInTheDocument()
     expect(screen.queryByText(/Stats are unavailable/)).toBeNull()
     quiet.mockRestore()
+  })
+
+  it('a habit added offline appears queued, survives in storage, and syncs on reconnect', async () => {
+    queueQueryResult({ data: [], error: null })
+    const user = userEvent.setup()
+    renderHabits()
+    await screen.findByText('No habits yet — add your first one above.')
+
+    // Train goes into a tunnel.
+    setOnlineSilently(false)
+    await user.type(screen.getByLabelText('New habit'), 'Stretch')
+    await user.click(screen.getByRole('button', { name: 'Add' }))
+
+    expect(screen.getByText('Queued')).toBeInTheDocument()
+    expect(screen.getByText('1 habit is waiting to sync.')).toBeInTheDocument()
+    expect(screen.getByLabelText('New habit')).toHaveValue('')
+    expect(window.localStorage.getItem('habits:queue:user-teddy@gmail.com')).toContain('Stretch')
+
+    // Signal returns: the queued insert is sent and the placeholder replaced.
+    queueQueryResult({ data: { id: 7, name: 'Stretch', created_at: '', daily_logs: [] }, error: null })
+    goOnline()
+
+    await waitFor(() => expect(screen.queryByText('Queued')).toBeNull())
+    expect(screen.getByLabelText('Stretch done today')).toBeEnabled()
+    expect(window.localStorage.getItem('habits:queue:user-teddy@gmail.com')).toBeNull()
+  })
+
+  it('queues instead of failing when the request dies mid-flight', async () => {
+    queueQueryResult({ data: [], error: null })
+    queueQueryResult({ data: null, error: { message: 'TypeError: Failed to fetch' } })
+    const user = userEvent.setup()
+    renderHabits()
+    await screen.findByText('No habits yet — add your first one above.')
+
+    await user.type(screen.getByLabelText('New habit'), 'Read')
+    await user.click(screen.getByRole('button', { name: 'Add' }))
+
+    expect(await screen.findByText('Queued')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).toBeNull()
   })
 })

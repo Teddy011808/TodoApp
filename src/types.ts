@@ -38,4 +38,6 @@ export interface Habit {
   name: string
   created_at: string
   daily_logs: DailyLog[]
+  /** Added while offline and not yet saved to the server (id is a negative temp id). */
+  queued?: boolean
 }
