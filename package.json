@@ -14,7 +14,9 @@
     "generate-pwa-assets": "pwa-assets-generator"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.117.1",
+    "@supabase/auth-js": "^2.117.1",
+    "@supabase/postgrest-js": "^2.117.1",
+    "@supabase/storage-js": "^2.117.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.4"

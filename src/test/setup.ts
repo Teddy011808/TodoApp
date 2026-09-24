@@ -5,6 +5,7 @@ import { resetFakeSupabase } from './fakeSupabase'
 
 // No test talks to a real Supabase project — see fakeSupabase.ts.
 vi.mock('../lib/supabase', () => import('./fakeSupabase'))
+vi.mock('../lib/storage', () => import('./fakeSupabase'))
 
 /**
  * jsdom 29 under Vitest 4 exposes `window.localStorage` as a bare object with

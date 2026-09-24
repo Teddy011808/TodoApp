@@ -24,6 +24,18 @@ export default function ShopPage() {
 
           return (
             <article className="card product" key={product.id}>
+              {/* Below the fold on phones: the browser fetches each one only as it
+                  nears the viewport, and width/height reserve its box so the card
+                  doesn't jump when it arrives. Decorative — the title says what it is. */}
+              <img
+                className="product-img"
+                src={product.image}
+                alt=""
+                width={320}
+                height={180}
+                loading="lazy"
+                decoding="async"
+              />
               <h2 className="product-title">{product.title}</h2>
               <p className="product-blurb">{product.blurb}</p>
               <div className="product-foot">

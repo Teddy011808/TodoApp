@@ -1,4 +1,4 @@
-import type { Session } from '@supabase/supabase-js'
+import type { Session } from '@supabase/auth-js'
 
 /**
  * An in-memory stand-in for src/lib/supabase, installed for every test in
@@ -136,3 +136,6 @@ export const supabase = {
     }),
   },
 }
+
+/** The avatar feature imports storage from its own module; same fake. */
+export const storage = supabase.storage
