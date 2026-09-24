@@ -1,15 +1,18 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { AuthProvider } from '../context/AuthContext'
 import { queueQueryResult, signInAs } from '../test/fakeSupabase'
 import HabitsPage from './HabitsPage'
 
-function renderHabits() {
+function renderHabits(path = '/habits') {
   signInAs('teddy@gmail.com')
   return render(
     <AuthProvider>
-      <HabitsPage />
+      <MemoryRouter initialEntries={[path]}>
+        <HabitsPage />
+      </MemoryRouter>
     </AuthProvider>,
   )
 }
@@ -27,7 +30,10 @@ describe('HabitsPage', () => {
 
     expect(await screen.findByLabelText('Read 20 pages done today')).toBeChecked()
     expect(screen.getByLabelText('Drink 2L of water done today')).not.toBeChecked()
-    expect(screen.getByText('1 of 2 done today')).toBeInTheDocument()
+    const stats = screen.getByRole('group', { name: "Today's stats" })
+    expect(stats).toHaveTextContent('Habits2')
+    expect(stats).toHaveTextContent('Done today1')
+    expect(stats).toHaveTextContent('Completion50%')
   })
 
   it('shows an EMPTY list, not an error, for an account with no rows', async () => {
@@ -72,5 +78,28 @@ describe('HabitsPage', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('row-level security')
     expect(screen.getByLabelText('New habit')).toHaveValue('Meditate')
+  })
+
+  it('a crashed stats section shows its fallback while the habit list keeps working', async () => {
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {})
+    queueQueryResult({
+      data: [{ id: 1, name: 'Read 20 pages', created_at: '', daily_logs: [] }],
+      error: null,
+    })
+    const user = userEvent.setup()
+    renderHabits('/habits?crash=stats')
+
+    // The broken section is replaced by its own fallback...
+    expect(await screen.findByText(/Stats are unavailable right now/)).toBeInTheDocument()
+    // ...and its neighbours are untouched and still interactive.
+    expect(await screen.findByLabelText('Read 20 pages done today')).toBeInTheDocument()
+    expect(screen.getByLabelText('New habit')).toBeEnabled()
+    expect(screen.getByLabelText('Choose image')).toBeEnabled()
+
+    // Try again clears the crash flag, so the section genuinely recovers.
+    await user.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(await screen.findByRole('group', { name: "Today's stats" })).toBeInTheDocument()
+    expect(screen.queryByText(/Stats are unavailable/)).toBeNull()
+    quiet.mockRestore()
   })
 })

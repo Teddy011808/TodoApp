@@ -6,7 +6,8 @@ import type { Session } from '@supabase/supabase-js'
  *
  * Auth behaves like the real client: listeners get INITIAL_SESSION on
  * subscribe, then SIGNED_IN / SIGNED_OUT as the session changes.
- * Queries resolve to whatever a test queued with queueQueryResult.
+ * Queries resolve to whatever a test queued for that table with
+ * queueQueryResult. Storage uploads are recorded, not sent anywhere.
  */
 
 type AuthListener = (event: string, session: Session | null) => void
@@ -19,7 +20,16 @@ interface QueryResult {
 let accounts = new Map<string, string>()
 let session: Session | null = null
 let listeners = new Set<AuthListener>()
-let queryResults: QueryResult[] = []
+let queryResults = new Map<string, QueryResult[]>()
+let uploads: Upload[] = []
+let uploadResults: QueryResult[] = []
+
+interface Upload {
+  bucket: string
+  path: string
+  file: File
+  options: { upsert?: boolean; contentType?: string } | undefined
+}
 
 function makeSession(email: string): Session {
   return {
@@ -45,26 +55,38 @@ export function signInAs(email: string) {
   session = makeSession(email)
 }
 
-/** The next query — whatever its chain of .from().select().eq()... — resolves to this. */
-export function queueQueryResult(result: QueryResult) {
-  queryResults.push(result)
+/** The next query on `table` — whatever its chain of .select().eq()... — resolves to this. */
+export function queueQueryResult(result: QueryResult, table = 'habits') {
+  queryResults.set(table, [...(queryResults.get(table) ?? []), result])
+}
+
+/** The next storage upload resolves to this instead of succeeding. */
+export function queueUploadResult(result: QueryResult) {
+  uploadResults.push(result)
+}
+
+/** Every upload made so far, in order. */
+export function getUploads(): readonly Upload[] {
+  return uploads
 }
 
 export function resetFakeSupabase() {
   accounts = new Map()
   session = null
   listeners = new Set()
-  queryResults = []
+  queryResults = new Map()
+  uploads = []
+  uploadResults = []
 }
 
 /** Every builder method returns the builder; awaiting it pops the next queued result. */
-function queryBuilder(): unknown {
+function queryBuilder(table: string): unknown {
   const builder: unknown = new Proxy(
     {},
     {
       get(_target, prop) {
         if (prop === 'then') {
-          const result = queryResults.shift() ?? { data: [], error: null }
+          const result = queryResults.get(table)?.shift() ?? { data: [], error: null }
           return (resolve: (value: QueryResult) => unknown) => resolve(result)
         }
         return () => builder
@@ -101,5 +123,16 @@ export const supabase = {
       return { error: null }
     },
   },
-  from: () => queryBuilder(),
+  from: (table: string) => queryBuilder(table),
+  storage: {
+    from: (bucket: string) => ({
+      async upload(path: string, file: File, options?: Upload['options']) {
+        uploads.push({ bucket, path, file, options })
+        return uploadResults.shift() ?? { data: { path }, error: null }
+      },
+      getPublicUrl: (path: string) => ({
+        data: { publicUrl: `https://test.supabase.co/storage/v1/object/public/${bucket}/${path}` },
+      }),
+    }),
+  },
 }
