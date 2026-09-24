@@ -203,6 +203,44 @@ RLS is enabled on both tables and every policy is `to authenticated` with
 `auth.uid() = user_id` — `USING` for SELECT/DELETE, `WITH CHECK` for INSERT, both for
 UPDATE. A second account therefore gets `[]` back — an empty list, not an error.
 
+## Avatars and error boundaries
+
+### Setup
+
+Run `supabase/avatars.sql` in the SQL editor after `schema.sql`. It creates `profiles`,
+the public `avatars` bucket (1 MB, PNG/JPEG/WebP/GIF only) and the storage policies.
+
+### Upload flow
+
+File input → `validateAvatar` (type, then size) → preview via `URL.createObjectURL` →
+**Upload** → `storage.upload('<uid>/avatar', file, { upsert: true })` → public URL saved to
+`profiles.avatar_url` → rendered on mount by `useAvatar`.
+
+- **Same path every time**, so re-uploading replaces the file instead of adding another.
+  The saved URL carries `?v=<timestamp>` so browsers don't keep showing the old image.
+- **Object URLs are revoked** when the preview changes or the component unmounts.
+- **SVG is refused**: it can contain `<script>`.
+
+### Client validation is UX; the policy is the security
+
+> The browser checks only save an honest user a wasted upload and give them a clear
+> message — anyone can skip them by calling the Storage API directly, so what actually
+> stops a stranger writing into your folder is the storage policy that pins every write
+> to `(storage.foldername(name))[1] = auth.uid()`, backed by the bucket's own size and
+> type limits.
+
+### Error boundaries
+
+`ErrorBoundary` is a class component (`getDerivedStateFromError` + `componentDidCatch`
+have no hook equivalent). Each section has its own boundary and fallback with a
+**Try again** button: the nav, the avatar card, today's stats and the habit list, plus a
+page-level catch-all around `<Outlet />`. The add-habit form sits outside the list's
+boundary, so it keeps working even when the list crashes.
+
+**See one fire (dev only):** add `?crash=<section>` to the URL, e.g.
+`/habits?crash=stats`. Sections: `nav`, `avatar`, `stats`, `habits`. **Try again** clears the
+flag, so the section genuinely recovers. Production builds ignore the parameter.
+
 ## Tests
 
 ```bash
@@ -210,7 +248,7 @@ npm test          # vitest run
 npm run test:watch
 ```
 
-33 tests across seven files, each next to the code it covers. None of them talk to a real
+51 tests across ten files, each next to the code it covers. None of them talk to a real
 Supabase project: `src/test/setup.ts` swaps `src/lib/supabase` for the in-memory fake in
 `src/test/fakeSupabase.ts`.
 
@@ -218,7 +256,10 @@ Supabase project: `src/test/setup.ts` swaps `src/lib/supabase` for the in-memory
 | --- | --- |
 | `src/pages/LoginPage.test.tsx` | render by label, validation errors, Supabase's wrong-password error, sign-in redirect |
 | `src/components/ProtectedRoute.test.tsx` | waits for the session, redirects signed-out visitors, keeps a restored session |
-| `src/pages/HabitsPage.test.tsx` | list + done-today, empty list (not an error), query error, add success/failure |
+| `src/pages/HabitsPage.test.tsx` | list + stats, empty list (not an error), query error, add success/failure, crashed stats section |
+| `src/lib/avatar.test.ts` | 5 MB refused, exact 1 MB boundary, non-images, SVG, empty file |
+| `src/components/AvatarUploader.test.tsx` | avatar on mount, inline rejection, preview, upsert into own folder, replace not duplicate |
+| `src/components/ErrorBoundary.test.tsx` | siblings survive, custom fallback, Try again, logging |
 | `src/pages/UsersPage.test.tsx` | async data with `findByText`, loading/empty/error states, debounce behaviour |
 | `src/pages/CheckoutPage.test.tsx` | cart line disappearing at quantity 0, cart restored from storage |
 | `src/hooks/useDebounce.test.ts` | delay, collapsing rapid typing, unmount cleanup |

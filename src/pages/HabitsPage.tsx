@@ -1,16 +1,39 @@
 import { useState, type FormEvent } from 'react'
+import AvatarUploader from '../components/AvatarUploader'
+import CrashTest, { useClearCrash } from '../components/CrashTest'
+import ErrorBoundary from '../components/ErrorBoundary'
 import HabitItem from '../components/HabitItem'
+import HabitStats from '../components/HabitStats'
 import { useAuth } from '../context/AuthContext'
 import { useHabits } from '../hooks/useHabits'
 
 export default function HabitsPage() {
   // ProtectedRoute guarantees a user by the time this renders.
   const { user } = useAuth()
+  const clearCrash = useClearCrash()
   if (user === null) return null
-  return <HabitTracker userId={user.id} />
+
+  return (
+    <section className="page">
+      <header className="page-head">
+        <h1>Habits</h1>
+        <p className="page-sub">Small things, every day.</p>
+      </header>
+
+      <div className="card section-card">
+        <h2 className="section-title">Your avatar</h2>
+        <ErrorBoundary label="Your avatar" onReset={clearCrash}>
+          <CrashTest section="avatar" />
+          <AvatarUploader userId={user.id} email={user.email ?? ''} />
+        </ErrorBoundary>
+      </div>
+
+      <HabitTracker userId={user.id} onResetCrash={clearCrash} />
+    </section>
+  )
 }
 
-function HabitTracker({ userId }: { userId: string }) {
+function HabitTracker({ userId, onResetCrash }: { userId: string; onResetCrash: () => void }) {
   const {
     habits,
     loading,
@@ -32,18 +55,29 @@ function HabitTracker({ userId }: { userId: string }) {
     if (await addHabit(trimmed)) setName('')
   }
 
-  const doneCount = habits.filter((habit) => habit.daily_logs.length > 0).length
-
   return (
-    <section className="page">
-      <header className="page-head">
-        <h1>Habits</h1>
-        <p className="page-sub">
-          {loading ? 'Loading…' : `${doneCount} of ${habits.length} done today`}
-        </p>
-      </header>
+    <>
+      <div className="card section-card">
+        <h2 className="section-title">Today</h2>
+        <ErrorBoundary
+          label="Today's stats"
+          onReset={onResetCrash}
+          fallback={({ reset }) => (
+            <div className="boundary-fallback boundary-inline" role="alert">
+              <span>Stats are unavailable right now — your habits below are unaffected.</span>
+              <button type="button" className="btn btn-sm" onClick={reset}>
+                Try again
+              </button>
+            </div>
+          )}
+        >
+          <CrashTest section="stats" />
+          {loading ? <p className="page-sub">Loading…</p> : <HabitStats habits={habits} />}
+        </ErrorBoundary>
+      </div>
 
-      <div className="card">
+      <div className="card section-card">
+        <h2 className="section-title">Your habits</h2>
         <form className="add-todo" onSubmit={handleAdd}>
           <input
             className="input"
@@ -68,31 +102,34 @@ function HabitTracker({ userId }: { userId: string }) {
           </div>
         )}
 
-        {loading ? (
-          <ul className="todo-list habit-list" aria-label="Loading habits">
-            {[0, 1, 2].map((row) => (
-              <li key={row} className="skeleton-row">
-                <div className="skeleton skeleton-line" />
-              </li>
-            ))}
-          </ul>
-        ) : habits.length === 0 ? (
-          <p className="empty habit-list">No habits yet — add your first one above.</p>
-        ) : (
-          <ul className="todo-list habit-list">
-            {habits.map((habit) => (
-              <HabitItem
-                key={habit.id}
-                habit={habit}
-                busy={pendingIds.has(habit.id)}
-                onToggle={toggleToday}
-                onRename={renameHabit}
-                onDelete={deleteHabit}
-              />
-            ))}
-          </ul>
-        )}
+        <ErrorBoundary label="Your habit list" onReset={onResetCrash}>
+          <CrashTest section="habits" />
+          {loading ? (
+            <ul className="todo-list habit-list" aria-label="Loading habits">
+              {[0, 1, 2].map((row) => (
+                <li key={row} className="skeleton-row">
+                  <div className="skeleton skeleton-line" />
+                </li>
+              ))}
+            </ul>
+          ) : habits.length === 0 ? (
+            <p className="empty habit-list">No habits yet — add your first one above.</p>
+          ) : (
+            <ul className="todo-list habit-list">
+              {habits.map((habit) => (
+                <HabitItem
+                  key={habit.id}
+                  habit={habit}
+                  busy={pendingIds.has(habit.id)}
+                  onToggle={toggleToday}
+                  onRename={renameHabit}
+                  onDelete={deleteHabit}
+                />
+              ))}
+            </ul>
+          )}
+        </ErrorBoundary>
       </div>
-    </section>
+    </>
   )
 }
