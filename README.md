@@ -241,6 +241,71 @@ boundary, so it keeps working even when the list crashes.
 `/habits?crash=stats`. Sections: `nav`, `avatar`, `stats`, `habits`. **Try again** clears the
 flag, so the section genuinely recovers. Production builds ignore the parameter.
 
+## PWA, offline and mobile
+
+### Install
+
+`vite-plugin-pwa` generates the manifest (name, short name, theme colour, standalone
+display) and a Workbox service worker. Icons in every required size — 64, 192, 512, a
+512 maskable and a 180 Apple touch icon, plus `favicon.ico` — are generated from
+`public/pwa-icon.svg` by `npm run generate-pwa-assets`. Chrome reports no installability
+errors on the production build; it needs HTTPS, which `localhost` and any real host provide.
+
+### Updates
+
+`registerType: 'prompt'`: a new service worker installs in the background and **waits**.
+`UpdateToast` (via `useRegisterSW` from `virtual:pwa-register/react`) shows
+**New version available → Refresh**; Refresh activates it and reloads onto the new build.
+
+### Caching — one rule per asset type
+
+| Asset | Strategy | Why it earns it |
+| --- | --- | --- |
+| App shell (hashed JS/CSS, HTML, icons) | **Precache** | Built filenames carry content hashes, so a cached copy can never be stale, and having them locally is what lets the app open with no signal at all. |
+| Avatar images (Supabase Storage) | **Cache first** | Every upload gets a new `?v=` URL, so the bytes behind any one URL never change and asking the network again could only waste time and data. |
+| Supabase data (`GET /rest/v1`) | **Network first**, 4 s timeout | Habits change and must be fresh whenever there is a connection, but on a train the last known list is far more useful than an error. |
+| Supabase auth (`/auth/v1`) | **Network only** | Tokens and sessions must always come from the server — serving them from a cache would be a security bug. |
+| Directory API (jsonplaceholder) | **Stale while revalidate** | Public, rarely-changing data, so showing the cached copy instantly and refreshing it in the background costs nothing and feels immediate. |
+
+Writes are never cached. Signing out deletes the `supabase-api` and `avatars` caches so the
+next person on a shared device can't see them.
+
+### Offline
+
+`useOnlineStatus` reads `navigator.onLine` through `useSyncExternalStore`, re-read on every
+`online`/`offline` event; `OfflineBanner` shows under the nav while offline and briefly says
+*Back online* on reconnect. A habit added offline — or whose request dies mid-flight — is
+stored in `localStorage` (per user), shown with a **Queued** badge, survives reloads, and is
+inserted when the `online` event fires. Server rejections are dropped with a message rather
+than retried forever.
+
+**Test offline only against a production build** — the dev server has no service worker:
+
+```bash
+npm run build && npm run preview
+```
+
+Then DevTools → Application → Service workers → **Offline**, and reload.
+
+### Mobile
+
+Checked at 320px, iPhone SE, Pixel 5, iPad Mini and 820px: no page scrolls horizontally.
+The nav wraps onto its own row on phones; card grids use the mobile-first
+`grid-cols-1 sm:grid-cols-2 lg:grid-cols-3` pattern (plain CSS utilities in `index.css`).
+**Share** uses the native share sheet where there is one and falls back to copying the link.
+
+### Lighthouse (mobile, production build)
+
+| Category | Before | After |
+| --- | --- | --- |
+| Performance | 99 | 98 |
+| Accessibility | 95 | 100 |
+| Best Practices | 100 | 100 |
+| SEO | 82 | 100 |
+
+Fixes: a low-contrast label in the nav (accessibility), a meta description and a real
+`robots.txt` (SEO). Performance varies by about a point between runs.
+
 ## Tests
 
 ```bash
@@ -248,7 +313,7 @@ npm test          # vitest run
 npm run test:watch
 ```
 
-51 tests across ten files, each next to the code it covers. None of them talk to a real
+62 tests across thirteen files, each next to the code it covers. None of them talk to a real
 Supabase project: `src/test/setup.ts` swaps `src/lib/supabase` for the in-memory fake in
 `src/test/fakeSupabase.ts`.
 
@@ -256,10 +321,13 @@ Supabase project: `src/test/setup.ts` swaps `src/lib/supabase` for the in-memory
 | --- | --- |
 | `src/pages/LoginPage.test.tsx` | render by label, validation errors, Supabase's wrong-password error, sign-in redirect |
 | `src/components/ProtectedRoute.test.tsx` | waits for the session, redirects signed-out visitors, keeps a restored session |
-| `src/pages/HabitsPage.test.tsx` | list + stats, empty list (not an error), query error, add success/failure, crashed stats section |
+| `src/pages/HabitsPage.test.tsx` | list + stats, empty list, query error, add success/failure, crashed stats, offline queue + sync on reconnect |
 | `src/lib/avatar.test.ts` | 5 MB refused, exact 1 MB boundary, non-images, SVG, empty file |
 | `src/components/AvatarUploader.test.tsx` | avatar on mount, inline rejection, preview, upsert into own folder, replace not duplicate |
 | `src/components/ErrorBoundary.test.tsx` | siblings survive, custom fallback, Try again, logging |
+| `src/components/OfflineBanner.test.tsx` | hidden online, shown on `offline`, *Back online* then gone |
+| `src/components/UpdateToast.test.tsx` | hidden by default, Refresh activates the waiting worker, Later dismisses |
+| `src/components/ShareButton.test.tsx` | clipboard fallback, native share, cancelling isn't an error |
 | `src/pages/UsersPage.test.tsx` | async data with `findByText`, loading/empty/error states, debounce behaviour |
 | `src/pages/CheckoutPage.test.tsx` | cart line disappearing at quantity 0, cart restored from storage |
 | `src/hooks/useDebounce.test.ts` | delay, collapsing rapid typing, unmount cleanup |
