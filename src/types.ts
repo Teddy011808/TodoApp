@@ -24,6 +24,8 @@ export interface Product {
   title: string
   price: number
   blurb: string
+  /** Illustration path under /public; rendered lazily below the fold. */
+  image: string
 }
 
 /** One check-in: the habit was done on log_date (YYYY-MM-DD). */

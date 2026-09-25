@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { storage } from '../lib/storage'
 import { validateAvatar } from '../lib/avatar'
 
 const BUCKET = 'avatars'
@@ -59,7 +60,7 @@ export function useAvatar(userId: string) {
       setError(null)
       try {
         const path = avatarPath(userId)
-        const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, file, {
+        const { error: uploadError } = await storage.from(BUCKET).upload(path, file, {
           upsert: true,
           contentType: file.type,
           cacheControl: '60',
@@ -69,7 +70,7 @@ export function useAvatar(userId: string) {
         // The URL never changes between uploads, so browsers and the CDN would
         // keep showing the old picture. A version stamp makes each upload a
         // new URL.
-        const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
+        const { data } = storage.from(BUCKET).getPublicUrl(path)
         const url = `${data.publicUrl}?v=${Date.now()}`
 
         const { error: saveError } = await supabase

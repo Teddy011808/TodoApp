@@ -59,6 +59,9 @@ export default function AvatarUploader({ userId, email }: AvatarUploaderProps) {
           <img
             className="avatar-img"
             src={shown}
+            // Above the fold, so not lazy — but sized, so nothing shifts when it loads.
+            width={88}
+            height={88}
             alt={previewUrl !== null ? 'Preview of your new avatar' : 'Your avatar'}
           />
         ) : (

@@ -1,5 +1,7 @@
 # Habits + Todos + User Directory + Shop
 
+**Live:** _add your Vercel URL here_ · **Mobile app:** [`mobile/`](mobile/README.md)
+
 A TypeScript React app built across several modules: lifted state, effects with cleanup and
 routing (module 3), then a typed async state machine, two contexts and a cart reducer
 (module 4).
@@ -305,6 +307,42 @@ The nav wraps onto its own row on phones; card grids use the mobile-first
 
 Fixes: a low-contrast label in the nav (accessibility), a meta description and a real
 `robots.txt` (SEO). Performance varies by about a point between runs.
+
+## Production
+
+### Performance pass
+
+| Chunk | Before | After |
+| --- | ---: | ---: |
+| Main `index-*.js` | 513.71 kB (gzip 148.20) | **403.11 kB** (gzip **117.86**) |
+| `HabitsPage-*.js` (lazy) | — | 41.25 kB (gzip 11.54) |
+
+- **Dependency replaced:** `@supabase/supabase-js` → `@supabase/auth-js` +
+  `postgrest-js` + `storage-js`. supabase-js bundles Realtime, Phoenix and Functions,
+  none of which this app calls, and they can't be tree-shaken (−69.9 kB). Full report:
+  [`perf/dependency-audit.md`](perf/dependency-audit.md).
+- **Lazy route:** only `/habits`. Lazy-loading every page to measure showed Habits at
+  ~41 kB — avatar upload + Storage client, offline queue, stats — and every other page
+  under 4 kB, where a split would add a request to save ~1 kB.
+- **Images:** shop illustrations are `loading="lazy"` + `decoding="async"` with
+  `width`/`height` (layout shift 0); the above-the-fold avatar is sized but not lazy.
+
+### Deploy (Vercel)
+
+Import the GitHub repo in Vercel (framework preset: Vite), then in **Settings →
+Environment Variables** add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`, and
+redeploy — Vite inlines them at build time, so a deploy made before they existed has
+none. `vercel.json` rewrites every path to `index.html` for client-side routes;
+`.vercelignore` keeps `mobile/` out of the upload. No env var is committed.
+
+### Expo
+
+`mobile/` is the same tracker in React Native — see [`mobile/README.md`](mobile/README.md).
+
+> **What I'd port next:** the offline queue — its logic (`habitQueue.ts`, the
+> `online`-event sync) moves for free with AsyncStorage swapped in for localStorage and
+> NetInfo for the browser events, while its rendering (the Queued badge and the banner)
+> has to be rebuilt from `View`/`Text`.
 
 ## Tests
 
