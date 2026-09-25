@@ -1,6 +1,6 @@
 # Habits + Todos + User Directory + Shop
 
-**Live:** _add your Vercel URL here_ · **Mobile app:** [`mobile/`](mobile/README.md)
+**Live:** https://todo-app-tau-bice-28.vercel.app · **Mobile app:** [`mobile/`](mobile/README.md)
 
 A TypeScript React app built across several modules: lifted state, effects with cleanup and
 routing (module 3), then a typed async state machine, two contexts and a cart reducer
